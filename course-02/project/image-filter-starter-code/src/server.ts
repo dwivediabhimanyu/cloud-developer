@@ -1,6 +1,12 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import { exists } from 'fs';
+import { isNull } from 'util';
+// url-exists to check if image Url is valid or not
+var urlExists = require('url-exists');
+//regex to check if string is URL or not.
+var Regex = require("regex");
 
 (async () => {
 
@@ -14,21 +20,32 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   app.use(bodyParser.json());
 
   // @TODO1 IMPLEMENT A RESTFUL ENDPOINT
-  // GET /filteredimage?image_url={{URL}}
-  // endpoint to filter an image from a public url.
-  // IT SHOULD
-  //    1
-  //    1. validate the image_url query
-  //    2. call filterImageFromURL(image_url) to filter the image
-  //    3. send the resulting file in the response
-  //    4. deletes any files on the server on finish of the response
-  // QUERY PARAMATERS
-  //    image_url: URL of a publicly accessible image
-  // RETURNS
-  //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
-
-  /**************************************************************************** */
-
+app.get("/filteredimage", async (req ,res) => {
+  let imageURL = req.query.image_url;
+  if(!imageURL) {
+    res.status(400).send("URL provided is blank.")
+  } else {
+    var expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+    var regex = new RegExp(expression);
+    if (imageURL.match(regex)) {
+      urlExists(imageURL , function (err: any ,exists: any) {
+        if(!exists) {
+          res.status(400).send("Error 404 for image url: URL provided does not exists.")
+        }
+      })
+    } else {
+      res.status(400).send("URL provided is invalid.")
+    }
+    try {
+      let responseImage= await filterImageFromURL(imageURL)
+      res.status(200).sendFile(responseImage, async () =>{
+        await deleteLocalFiles([responseImage])
+      })
+    } catch (err) {
+        console.error(err)
+        res.status(415).send("Something not good. Unsupported Type.")
+      }
+}});
   //! END @TODO1
   
   // Root Endpoint
