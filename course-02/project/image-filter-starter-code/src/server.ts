@@ -20,7 +20,7 @@ var Regex = require("regex");
   app.use(bodyParser.json());
 
   // @TODO1 IMPLEMENT A RESTFUL ENDPOINT
-app.get("/filteredimage", async (req ,res) => {
+app.get("/filteredimage", async (req:express.Request ,res:express.Response) => {
   let imageURL = req.query.image_url;
   if(!imageURL) {
     res.status(400).send("URL provided is blank.")
